@@ -30,6 +30,12 @@ namespace KGPKScheduleParser
             }
             driver.Quit();
         }
+
+
+
+        //НОРМАЛЬНО ПРОРАБОТАТЬ КЕЙС, КОГДА ПАРА НЕ ПО ПОДГРУППАМ. ТЫ АДАПТИРОВАЛ ВЕСЬ ИЗНАЧАЛЬНО НАПИСАННЫЙ КОД ПОД СЛУЧАЙ С ПОДГРУППАМИ.
+
+
         public static ScheduleOfWeek GetScheduleForGroup(string groupName)
         {
             ChromeDriver driver = new ChromeDriver();
