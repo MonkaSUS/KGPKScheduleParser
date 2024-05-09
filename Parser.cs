@@ -1,4 +1,5 @@
-﻿using OpenQA.Selenium;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System.Data;
@@ -9,6 +10,7 @@ namespace KGPKScheduleParser
     {
         private const string _websiteAdress = "https://schedule.kg-college.ru/";
         private static List<string> _teacherNames = new List<string>();
+        private static List<string> separatedTeacherNames = new List<string>();
         /// <summary>
         /// получить список всех преподавателей, чтобы затем отделять их от текста в названии пары
         /// </summary>
@@ -27,6 +29,11 @@ namespace KGPKScheduleParser
             foreach (var opt in selectList.Options)
             {
                 _teacherNames.Add(opt.Text.ToUpperInvariant());
+            }
+            Thread.Sleep(1000);
+            foreach (var name in _teacherNames)
+            {
+                separatedTeacherNames.AddRange(name.ToUpperInvariant().Split(' ')); // "КОГАН" "И.Я."
             }
             driver.Quit();
         }
@@ -73,52 +80,66 @@ namespace KGPKScheduleParser
                     var shitbag = tableRow.FindElements(By.TagName("td")); //номера кабинетов и общая инфа о паре раскиданы в разных td
                     var comboOfStrings = shitbag[0].Text + " " + shitbag[1].Text; //Сочетание поля с названием пары, преподами итд с полем, в котором написаны кабинеты
                     //надо хотя бы получить кабинеты. По-моему, безопасно взять последние шесть символов из этого сочетания, отпилить их и высосать все числа оттуда
-                    var stringWithClassroomNumbers = comboOfStrings.Substring(comboOfStrings.Length - 6); //берём последние 6 символов строки
-                    var ClassroomNumbersTotal = stringWithClassroomNumbers.Where(char.IsDigit); //получаем из строки только числовые символы. превращаем их в числа, соединяем в строку, затем разбиваем на массив
-                    string firstClassNumber = "";
-                    string secondClassNumber = "";
-                    int[] RoomNumbers = new int[2];
-
-                    if (ClassroomNumbersTotal.Count() == 4)
+                    if (!String.IsNullOrWhiteSpace(comboOfStrings)) //ЭТО СЛУЧАЕТСЯ, КОГДА ПАРЫ ВООБЩЕ НЕ СУЩЕСТВУЕТ. ОСТАВЛЯЕМ ВСЁ ПУСТЫМ
                     {
-                        RoomNumbers[0] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal).Substring(0, 2));
-                        RoomNumbers[1] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal).Substring(2, 2));
+
+                        var stringWithClassroomNumbers = comboOfStrings.Substring(comboOfStrings.Length - 6); //берём последние 6 символов строки
+                        var ClassroomNumbersTotal = stringWithClassroomNumbers.Where(char.IsDigit); //получаем из строки только числовые символы. превращаем их в числа, соединяем в строку, затем разбиваем на массив
+                        string firstClassNumber = "";
+                        string secondClassNumber = "";
+                        int[] RoomNumbers = new int[2];
+
+                        if (ClassroomNumbersTotal.Count() == 4)
+                        {
+                            RoomNumbers[0] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal).Substring(0, 2));
+                            RoomNumbers[1] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal).Substring(2, 2));
+                        }
+                        else
+                        {
+                            RoomNumbers[0] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal));
+                        }
+
+                        //теперь надо получить имена преподавателей (преподавателя)
+                        //благодаря teacherNames должно быть легко
+                        //мне плевать на производительность этой параши
+                        Thread.Sleep(500);
+
+
+
+                        var TeachersForClass = _teacherNames.FindAll(x => comboOfStrings.ToUpperInvariant().Trim().Contains(x.ToUpperInvariant().Trim())).ToList(); // имеет ли в себе _teacherNames такие элементы x, что строка comboOfStrings в себе их содержит
+                        var comboOfStringSplit = comboOfStrings.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[1].Split();
+                        string SurnameToFind = comboOfStringSplit[0].ToUpperInvariant();
+                        //var firstTeacherSurname = comboOfStringSplit.FirstOrDefault(x => separatedTeacherNames.Contains(x)); //https://www.youtube.com/watch?v=Nppn3Hnocas
+                        var firstTeacherSurname = separatedTeacherNames.First(x => x == SurnameToFind);
+                        if (!TeachersForClass[0].Split(' ')[0].Equals(firstTeacherSurname))
+                        {
+                            TeachersForClass.Reverse();
+                        }
+                        //теперь надо получить названия пар. Преподаватели были получены в порядке появления, поэтому пары тоже надо получить в порядке появления.
+                        //кейс с подгруппами
+                        List<string> Classes = new List<string>();
+                        if (comboOfStrings.Split(' ').Contains("1п") || comboOfStrings.Split(' ').Contains("2п"))
+                        {
+                            Classes.Add(String.Concat(comboOfStrings.GetUntilOrEmpty("1п"), " 1п").Trim());
+                            Classes.Add(String.Concat(comboOfStrings.ExclusiveGetBetweenOrEmpty("1п", "2п").Trim(), " 2п"));
+                        }
+                        //если нету разделения на подгруппы, то преподаватель может быть только один.
+                        else //String.IsNullOrEmpty(Classes[0]) && String.IsNullOrEmpty(Classes[1])
+                        {
+                            string nameOfClassToAdd = comboOfStrings.Split(new char[] { '\r', '\n' })[0];
+                            Classes.Add(nameOfClassToAdd);
+                        }
+                        Para thisClass = new Para()
+                        {
+                            classNumber = Convert.ToInt32(ClassNumber.Text),
+                            ClassroomNumbers = RoomNumbers,
+                            NameOfClasses = Classes.ToArray(),
+                            TeacherNames = TeachersForClass.ToArray()
+                        };
+                        thisDay.spisokPar.Add(thisClass);
+                        thisDay.date = DateOnly.FromDateTime(dateOfDay);
+                        schedule.days.Add(thisDay);
                     }
-                    else
-                    {
-                        RoomNumbers[0] = Convert.ToInt32(ClassroomNumbersTotal.ToString());
-                    }
-
-                    //теперь надо получить имена преподавателей (преподавателя)
-                    //благодаря teacherNames должно быть легко
-                    //мне плевать на производительность этой параши
-                    Thread.Sleep(500);
-
-
-                    //сейчас проблема в том, что преподы записаны в алфавитном порядке, а в расписании они указаны в порядке пар. чинить
-
-
-                    var TeachersForClass = _teacherNames.FindAll(x => comboOfStrings.ToUpperInvariant().Trim().Contains(x.ToUpperInvariant().Trim())); // имеет ли в себе _teacherNames такие элементы x, что строка comboOfStrings в себе их содержит
-                    //теперь надо получить названия пар. Преподаватели были получены в порядке появления, поэтому пары тоже надо получить в порядке появления.
-                    //кейс с подгруппами
-                    List<string> Classes = new List<string>();
-                    Classes.Add(String.Concat(comboOfStrings.GetUntilOrEmpty("1п"), " 1п").Trim());
-                    Classes.Add(String.Concat(comboOfStrings.ExclusiveGetBetweenOrEmpty("1п", "2п").Trim(), "2п"));
-                    //если нету разделения на подгруппы, то преподаватель может быть только один.
-                    if (String.IsNullOrEmpty(Classes[0]) && String.IsNullOrEmpty(Classes[1]))
-                    {
-                        Classes.Add(comboOfStrings.GetUntilOrEmpty(TeachersForClass[0]));
-                    }
-                    Para thisClass = new Para()
-                    {
-                        classNumber = Convert.ToInt32(ClassNumber.Text),
-                        ClassroomNumbers = RoomNumbers,
-                        NameOfClasses = Classes.ToArray(),
-                        TeacherNames = TeachersForClass.ToArray()
-                    };
-                    thisDay.spisokPar.Add(thisClass);
-                    thisDay.date = DateOnly.FromDateTime(dateOfDay);
-                    schedule.days.Add(thisDay);
                 }
             }
             driver.Quit();
@@ -171,9 +192,17 @@ namespace KGPKScheduleParser
                 int startLocation = text.IndexOf(startAt, StringComparison.Ordinal);
                 int stopLocation = text.IndexOf(stopAt, StringComparison.Ordinal);
 
-                if (stopLocation > startLocation && stopLocation is > 0 and not -1 && startLocation is > 0 and not -1)
+                if (startLocation == -1)
                 {
-                    return text.Substring(startLocation + startAt.Length, stopLocation - startLocation - startAt.Length);
+                    return text.GetUntilOrEmpty(stopAt).Split(new char[] { '\r', '\n' })[0];
+                }
+                else
+                {
+
+                    if (stopLocation > startLocation && stopLocation is > 0 and not -1 && startLocation is > 0 and not -1)
+                    {
+                        return text.Substring(startLocation + startAt.Length, stopLocation - startLocation - startAt.Length);
+                    }
                 }
             }
             return String.Empty;
