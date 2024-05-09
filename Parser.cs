@@ -96,7 +96,14 @@ namespace KGPKScheduleParser
                         }
                         else
                         {
-                            RoomNumbers[0] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal));
+                            try
+                            {
+                                RoomNumbers[0] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal));
+                            }
+                            catch (Exception)
+                            {
+                                RoomNumbers[0] = 0;
+                            }
                         }
 
                         //теперь надо получить имена преподавателей (преподавателя)
