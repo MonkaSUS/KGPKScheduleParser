@@ -50,9 +50,9 @@ namespace KGPKScheduleParser
         /// </summary>
         public static void GetAllTeachers()
         {
-            ChromeOptions headlessOptions = new ChromeOptions();
-            headlessOptions.AddArguments("headless");
-            ChromeDriver driver = new ChromeDriver(headlessOptions);
+            //ChromeOptions headlessOptions = new ChromeOptions();
+            //headlessOptions.AddArguments("headless");
+            ChromeDriver driver = new ChromeDriver();//headlessOptions);
             var navigator = driver.Navigate();
             navigator.GoToUrl(_websiteAdress);
             //найти и нажать кнопку Преподаватель

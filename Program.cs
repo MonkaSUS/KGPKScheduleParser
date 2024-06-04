@@ -68,6 +68,7 @@ app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, I
 app.MapGet("/", () =>
 {
     Parser.GetAllTeachers();
+    return "hehehehe";
 });
 ///
 /// Короче, тема такая. Этот запрос при первом исполнении занимает ~34-35 секунд. Это слишком много
