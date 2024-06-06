@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<Parser>();
+builder.Services.AddScoped<IParser, Parser>();
 builder.Services.AddHttpClient();
 builder.Services.AddScheduler();
 builder.Services.AddEasyCaching(o =>
@@ -44,7 +44,7 @@ app.Services.UseScheduler(s =>
             await prov.RemoveAllAsync(cachedKeys);
         }).DailyAtHour(9).Sunday();
 });
-app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, IEasyCachingProvider prov) =>
+app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, IEasyCachingProvider prov, IParser parser) =>
 {
     if (await prov.ExistsAsync(groupname)) //если в кеше существует запись для искомой группы, вернуть её, иначе спарсить
     {
@@ -55,7 +55,7 @@ app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, I
             ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
         }, statusCode: 200);
     }
-    var res = Parser.GetScheduleForGroup(groupname);
+    var res = parser.GetScheduleForGroup(groupname);
     await prov.SetAsync<ScheduleOfWeek>(groupname, res, TimeSpan.FromDays(6)); //перед возвратом расписания оно кешируется
     cachedKeys.Add(groupname);
     return Results.Json(res, options: new System.Text.Json.JsonSerializerOptions()
@@ -68,6 +68,14 @@ app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, I
 app.MapGet("/", () =>
 {
     Parser.GetAllTeachers();
+});
+app.MapGet("/groups", async () =>
+{
+    return Results.Json(Parser._teacherNames, new System.Text.Json.JsonSerializerOptions()
+    {
+        IncludeFields = true,
+        ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+    }, statusCode: 200);
 });
 ///
 /// Короче, тема такая. Этот запрос при первом исполнении занимает ~34-35 секунд. Это слишком много

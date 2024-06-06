@@ -34,13 +34,13 @@ namespace KGPKScheduleParser
     ///⠀⠀⠀⠀⠀⠀⠀⠀⠙⢷⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡴⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀
     ///⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠳⠶⠦⣤⣤⣤⡤⠶⠞⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀
     /// </summary>
-    public class Parser
+    public class Parser : IParser
     {
         private const string _websiteAdress = "https://schedule.kg-college.ru/";
         /// <summary>
         /// Список Ф.И.О. преподавателей, берётся из меню выбора "Преподаватели" на сайте расписания.
         /// </summary>
-        private static List<string> _teacherNames = new List<string>();
+        public static List<string> _teacherNames = new List<string>();
         /// <summary>
         /// Разделённые Ф.И.О. преподавателей.
         /// </summary>
@@ -79,7 +79,7 @@ namespace KGPKScheduleParser
         //НОРМАЛЬНО ПРОРАБОТАТЬ КЕЙС, КОГДА ПАРА НЕ ПО ПОДГРУППАМ. ТЫ АДАПТИРОВАЛ ВЕСЬ ИЗНАЧАЛЬНО НАПИСАННЫЙ КОД ПОД СЛУЧАЙ С ПОДГРУППАМИ.
 
 
-        public static ScheduleOfWeek GetScheduleForGroup(string groupName)
+        public ScheduleOfWeek GetScheduleForGroup(string groupName)
         {
             ChromeOptions headlessOptions = new ChromeOptions();
             headlessOptions.AddArguments("headless");
@@ -291,6 +291,17 @@ namespace KGPKScheduleParser
                 }
             }
             return String.Empty;
+        }
+    }
+    public interface IParser
+    {
+        public static void GetAllTeachers()
+        {
+
+        }
+        public ScheduleOfWeek GetScheduleForGroup(string groupName)
+        {
+            return new ScheduleOfWeek();
         }
     }
 
