@@ -5,6 +5,8 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System.Collections.ObjectModel;
 using System.Data;
+using System.Net;
+using System.Reflection.Metadata.Ecma335;
 
 namespace KGPKScheduleParser
 {
@@ -72,6 +74,23 @@ namespace KGPKScheduleParser
                 separatedTeacherNames.AddRange(name.ToUpperInvariant().Split(' ')); // "КОГАН" "И.Я."
             }
             driver.Quit();
+        }
+        public static List<string> GetAllGroups()
+        {
+            List<string> result = new();
+            ChromeOptions headlessOptions = new ChromeOptions();
+            headlessOptions.AddArguments("headless");
+            ChromeDriver driver = new ChromeDriver(headlessOptions);
+            driver.Navigate().GoToUrl(_websiteAdress);
+            //найти кнопку "группа" и нажать её
+            driver.FindElement(By.XPath("/html/body/div[4]/div/button[1]")).Click();
+            //найти селект с списком групп
+            SelectElement groups = new SelectElement(driver.FindElement(By.XPath("//*[@id=\"selectgroupname\"]")));
+            foreach (var item in groups.Options)
+            {
+                result.Add(item.Text);
+            }
+            return result;
         }
 
 

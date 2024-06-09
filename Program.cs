@@ -69,9 +69,20 @@ app.MapGet("/", () =>
 {
     Parser.GetAllTeachers();
 });
-app.MapGet("/groups", async () =>
+app.MapGet("/groups", async (IEasyCachingProvider prov) =>
 {
-    return Results.Json(Parser._teacherNames, new System.Text.Json.JsonSerializerOptions()
+    if (await prov.ExistsAsync("allGroups"))
+    {
+        var cachedRes = await prov.GetAsync<List<string>>("allGroups");
+        return Results.Json(cachedRes, options: new System.Text.Json.JsonSerializerOptions()
+        {
+            IncludeFields = true,
+            ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+        }, statusCode: 200);
+    }
+    var allGroups = Parser.GetAllGroups();
+    await prov.SetAsync<List<string>>("allGroups", allGroups, TimeSpan.FromDays(7));
+    return Results.Json(allGroups, new System.Text.Json.JsonSerializerOptions()
     {
         IncludeFields = true,
         ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
