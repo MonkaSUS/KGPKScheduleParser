@@ -68,6 +68,7 @@ app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, I
 app.MapGet("/", () =>
 {
     Parser.GetAllTeachers();
+    return "hehehehe";
 });
 app.MapGet("/groups", async (IEasyCachingProvider prov) =>
 {
