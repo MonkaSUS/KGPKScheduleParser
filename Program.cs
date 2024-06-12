@@ -2,6 +2,9 @@ using Coravel;
 using EasyCaching.Core;
 using KGPKScheduleParser;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using static KGPKScheduleParser.Parser;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,10 +52,15 @@ app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, I
     if (await prov.ExistsAsync(groupname)) //если в кеше существует запись для искомой группы, вернуть её, иначе спарсить
     {
         var cachedRes = await prov.GetAsync<ScheduleOfWeek>(groupname);
-        return Results.Json(cachedRes, options: new System.Text.Json.JsonSerializerOptions()
+        return Results.Json(cachedRes.Value, options: new System.Text.Json.JsonSerializerOptions()
         {
             IncludeFields = true,
-            ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+            AllowTrailingCommas = false,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            IgnoreReadOnlyFields = false,
+            IgnoreReadOnlyProperties = false,
+            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
         }, statusCode: 200);
     }
     var res = parser.GetScheduleForGroup(groupname);
@@ -74,15 +82,15 @@ app.MapGet("/groups", async (IEasyCachingProvider prov) =>
 {
     if (await prov.ExistsAsync("allGroups"))
     {
-        var cachedRes = await prov.GetAsync<List<string>>("allGroups");
-        return Results.Json(cachedRes, options: new System.Text.Json.JsonSerializerOptions()
+        var cachedRes = await prov.GetAsync<Groups>("allGroups");
+        return Results.Json(cachedRes.Value, options: new System.Text.Json.JsonSerializerOptions()
         {
             IncludeFields = true,
             ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
         }, statusCode: 200);
     }
     var allGroups = Parser.GetAllGroups();
-    await prov.SetAsync<List<string>>("allGroups", allGroups, TimeSpan.FromDays(7));
+    await prov.SetAsync("allGroups", allGroups, TimeSpan.FromDays(7));
     return Results.Json(allGroups, new System.Text.Json.JsonSerializerOptions()
     {
         IncludeFields = true,

@@ -75,7 +75,7 @@ namespace KGPKScheduleParser
             }
             driver.Quit();
         }
-        public static List<string> GetAllGroups()
+        public static Groups GetAllGroups()
         {
             List<string> result = new();
             ChromeOptions headlessOptions = new ChromeOptions();
@@ -86,11 +86,22 @@ namespace KGPKScheduleParser
             driver.FindElement(By.XPath("/html/body/div[4]/div/button[1]")).Click();
             //найти селект с списком групп
             SelectElement groups = new SelectElement(driver.FindElement(By.XPath("//*[@id=\"selectgroupname\"]")));
+            Thread.Sleep(500);
             foreach (var item in groups.Options)
             {
                 result.Add(item.Text);
             }
-            return result;
+            Groups res = new Groups()
+            {
+                GroupNames = result,
+                dateOfCollection = DateTime.Now
+            };
+            return res;
+        }
+        public class Groups
+        {
+            public List<string> GroupNames { get; set; }
+            public DateTime dateOfCollection { get; set; }
         }
 
 
