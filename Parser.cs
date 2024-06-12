@@ -166,7 +166,15 @@ namespace KGPKScheduleParser
                         {
                             try
                             {
-                                RoomNumbers[0] = Convert.ToInt32(String.Concat(ClassroomNumbersTotal)); // пытаемся получить номер кабинета
+                                var concatedStrings = String.Concat(ClassroomNumbersTotal);
+                                if (string.IsNullOrWhiteSpace(concatedStrings) || concatedStrings == "1" || concatedStrings == "2")
+                                {
+                                    RoomNumbers[0] = 0;
+                                }
+                                else
+                                {
+                                    RoomNumbers[0] = Convert.ToInt32(concatedStrings); // пытаемся получить номер кабинета
+                                }
                             }
                             catch (Exception) //исключение выплёвывается, если не получилось спарсить ни одного числа. ставим кабинет = 0
                             {
@@ -193,24 +201,40 @@ namespace KGPKScheduleParser
 
 
                         var TeachersForClass = _teacherNames.FindAll(x => comboOfStrings.ToUpperInvariant().Trim().Contains(x.ToUpperInvariant().Trim())).ToList(); // имеет ли в себе _teacherNames такие элементы x, что строка comboOfStrings в себе их содержит
-                        var comboOfStringSplit = comboOfStrings.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[1].Split(); //разделяем общую строку по лайнбрейку
-                        string SurnameToFind = comboOfStringSplit[0].ToUpperInvariant(); //Фамилия, которую надо найти
-                        //https://www.youtube.com/watch?v=Nppn3Hnocas
-                        var firstTeacherSurname = separatedTeacherNames.First(x => x == SurnameToFind); //получаем фамилию первого реального преподавателя
-                        if (!TeachersForClass[0].Split(' ')[0].Equals(firstTeacherSurname)) //если первая реальная фамилия не сочетается с той, что мы получили в начале, меняем их местами
+                        if (!string.IsNullOrEmpty(string.Join("", TeachersForClass)))
                         {
-                            TeachersForClass.Reverse();
+
+                            var comboOfStringSplit = comboOfStrings.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[1].Split(); //разделяем общую строку по лайнбрейку
+                            string SurnameToFind = comboOfStringSplit[0].ToUpperInvariant(); //Фамилия, которую надо найти
+                            //https://www.youtube.com/watch?v=Nppn3Hnocas
+                            var firstTeacherSurname = separatedTeacherNames.First(x => x == SurnameToFind); //получаем фамилию первого реального преподавателя
+                            if (!TeachersForClass[0].Split(' ')[0].Equals(firstTeacherSurname)) //если первая реальная фамилия не сочетается с той, что мы получили в начале, меняем их местами
+                            {
+                                TeachersForClass.Reverse();
+                            }
                         }
+                        else
+                        {
+                            TeachersForClass = thisDay.spisokPar.First(x => !string.IsNullOrEmpty(x.NameOfClasses[0])).TeacherNames.ToList();
+                        }
+
                         //теперь надо получить названия пар. Преподаватели были получены в порядке появления, поэтому пары тоже надо получить в порядке появления.
                         //кейс с подгруппами
+                        bool IsSubgroups = false;
+
                         List<string> Classes = new List<string>();
-                        if (comboOfStrings.Split(' ').Contains("1п") || comboOfStrings.Split(' ').Contains("2п"))
+                        if (comboOfStrings.Split(' ').Contains("1п"))
                         {
                             Classes.Add(String.Concat(comboOfStrings.GetUntilOrEmpty("1п"), " 1п").Trim());
+                            IsSubgroups = true;
+                        }
+                        if (comboOfStrings.Split(' ').Contains("2п"))
+                        {
                             Classes.Add(String.Concat(comboOfStrings.ExclusiveGetBetweenOrEmpty("1п", "2п").Trim(), " 2п"));
+                            IsSubgroups = true;
                         }
                         //если нету разделения на подгруппы, то преподаватель может быть только один.
-                        else //String.IsNullOrEmpty(Classes[0]) && String.IsNullOrEmpty(Classes[1])
+                        if (!IsSubgroups) //String.IsNullOrEmpty(Classes[0]) && String.IsNullOrEmpty(Classes[1])
                         {
                             string nameOfClassToAdd = comboOfStrings.Split(new char[] { '\r', '\n' })[0];
                             Classes.Add(nameOfClassToAdd);
