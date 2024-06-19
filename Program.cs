@@ -49,6 +49,10 @@ app.Services.UseScheduler(s =>
 });
 app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, IEasyCachingProvider prov, IParser parser) =>
 {
+    if (groupname.Last() == 'К')
+    {
+        groupname.Replace('К', 'к');
+    }
     if (await prov.ExistsAsync(groupname)) //если в кеше существует запись для искомой группы, вернуть её, иначе спарсить
     {
         var cachedRes = await prov.GetAsync<ScheduleOfWeek>(groupname);

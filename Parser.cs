@@ -199,10 +199,16 @@ namespace KGPKScheduleParser
                         /// Ниже идёт код, который избавляется от этой проблемы
                         ///
 
-
                         var TeachersForClass = _teacherNames.FindAll(x => comboOfStrings.ToUpperInvariant().Trim().Contains(x.ToUpperInvariant().Trim())).ToList(); // имеет ли в себе _teacherNames такие элементы x, что строка comboOfStrings в себе их содержит
+                        if (TeachersForClass.First() == "ПОДГОРНЫЙ Я.Б.")
+                        {
+                            Console.WriteLine("asdasdqweasd");
+                        }
                         if (!string.IsNullOrEmpty(string.Join("", TeachersForClass)))
                         {
+
+                            try
+                            {
 
                             var comboOfStringSplit = comboOfStrings.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[1].Split(); //разделяем общую строку по лайнбрейку
                             string SurnameToFind = comboOfStringSplit[0].ToUpperInvariant(); //Фамилия, которую надо найти
@@ -211,6 +217,11 @@ namespace KGPKScheduleParser
                             if (!TeachersForClass[0].Split(' ')[0].Equals(firstTeacherSurname)) //если первая реальная фамилия не сочетается с той, что мы получили в начале, меняем их местами
                             {
                                 TeachersForClass.Reverse();
+                            }
+                            }
+                            catch (Exception exc)
+                            {
+
                             }
                         }
                         else
