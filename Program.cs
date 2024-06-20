@@ -31,7 +31,7 @@ builder.Services.AddEasyCaching(o =>
 var app = builder.Build();
 app.UseHttpsRedirection();
 Parser.GetAllTeachers();
-List<string> cachedKeys = new();
+
 
 //Исполнение кода по определённому графику с помощью Coravel, у них хорошая документация.
 app.Services.UseScheduler(s =>
@@ -44,7 +44,7 @@ app.Services.UseScheduler(s =>
     s.Schedule(async () =>
         {
             var prov = app.Services.GetService<IEasyCachingProvider>();
-            await prov.RemoveAllAsync(cachedKeys);
+            await prov.FlushAsync();
         }).DailyAtHour(9).Sunday();
 });
 app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, IEasyCachingProvider prov, IParser parser) =>
@@ -69,7 +69,6 @@ app.MapGet("schedule", async ([FromQuery(Name = "forGroup")] string groupname, I
     }
     var res = parser.GetScheduleForGroup(groupname);
     await prov.SetAsync<ScheduleOfWeek>(groupname, res, TimeSpan.FromDays(6)); //перед возвратом расписания оно кешируется
-    cachedKeys.Add(groupname);
     return Results.Json(res, options: new System.Text.Json.JsonSerializerOptions()
     {
         IncludeFields = true,

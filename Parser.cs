@@ -52,9 +52,10 @@ namespace KGPKScheduleParser
         /// </summary>
         public static void GetAllTeachers()
         {
-            //ChromeOptions headlessOptions = new ChromeOptions();
-            //headlessOptions.AddArguments("headless");
-            ChromeDriver driver = new ChromeDriver();//headlessOptions);
+            ChromeOptions headlessOptions = new ChromeOptions();
+            headlessOptions.AddArguments("headless");
+            headlessOptions.AddArgument("no-sandbox");
+            ChromeDriver driver = new ChromeDriver(headlessOptions);
             var navigator = driver.Navigate();
             navigator.GoToUrl(_websiteAdress);
             //найти и нажать кнопку Преподаватель
@@ -80,6 +81,7 @@ namespace KGPKScheduleParser
             List<string> result = new();
             ChromeOptions headlessOptions = new ChromeOptions();
             headlessOptions.AddArguments("headless");
+            headlessOptions.AddArgument("no-sandbox");
             ChromeDriver driver = new ChromeDriver(headlessOptions);
             driver.Navigate().GoToUrl(_websiteAdress);
             //найти кнопку "группа" и нажать её
